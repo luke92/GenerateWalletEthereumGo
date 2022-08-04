@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/ecdsa"
+	"flag"
 	"fmt"
 	"log"
 
@@ -10,7 +11,43 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
+var (
+	PrivateKeyToDecode = flag.String("pk", "", "Private key for decode")
+)
+
+func init() {
+	receiveArguments()
+}
+
+func receiveArguments() {
+	flag.Parse()
+}
+
 func main() {
+
+	if *PrivateKeyToDecode == "" {
+		createWallet()
+	} else {
+		decodeWallet(*PrivateKeyToDecode)
+	}
+
+}
+
+func decodeWallet(privateKeyToDecode string) {
+	privateKeyBytes, err := hexutil.Decode(privateKeyToDecode)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	privateKey, err := crypto.ToECDSA(privateKeyBytes)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	printAddress(privateKey)
+}
+
+func createWallet() {
 	privateKey, err := crypto.GenerateKey()
 	if err != nil {
 		log.Fatal(err)
@@ -19,8 +56,12 @@ func main() {
 	privateKeyBytes := crypto.FromECDSA(privateKey)
 
 	fmt.Println("PRIVATE KEY")
-	fmt.Println(hexutil.Encode(privateKeyBytes)[2:]) // 0xfad9c8855b740a0b7ed4c221dbad0f33a83a49cad6b3fe8d5817ac83d38b6a19
+	fmt.Println(hexutil.Encode(privateKeyBytes)) // 0xfad9c8855b740a0b7ed4c221dbad0f33a83a49cad6b3fe8d5817ac83d38b6a19
 
+	printAddress(privateKey)
+}
+
+func printAddress(privateKey *ecdsa.PrivateKey) {
 	publicKey := privateKey.Public()
 	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
 
@@ -31,7 +72,7 @@ func main() {
 	publicKeyBytes := crypto.FromECDSAPub(publicKeyECDSA)
 
 	fmt.Println("PUBLIC KEY")
-	fmt.Println(hexutil.Encode(publicKeyBytes)[4:]) // 0x049a7df67f79246283fdc93af76d4f8cdd62c4886e8cd870944e817dd0b97934fdd7719d0810951e03418205868a5c1b40b192451367f28e0088dd75e15de40c05
+	fmt.Println(hexutil.Encode(publicKeyBytes)) // 0x049a7df67f79246283fdc93af76d4f8cdd62c4886e8cd870944e817dd0b97934fdd7719d0810951e03418205868a5c1b40b192451367f28e0088dd75e15de40c05
 
 	address := crypto.PubkeyToAddress(*publicKeyECDSA).Hex()
 
